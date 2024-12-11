@@ -7,5 +7,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(3333, () => {
-    console.log("Running");
+    console.log("Server is Running with Success!!");
 });
