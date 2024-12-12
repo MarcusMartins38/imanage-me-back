@@ -1,14 +1,16 @@
+import bcrypt from "bcrypt";
 import express from "express";
-import * as dotenv from "dotenv";
+import dotenv from "dotenv";
+import userRouter from "./routes/user";
 
 dotenv.config();
 
 const app = express();
+app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.send("Success");
-});
+app.use("/user", userRouter);
 
-app.listen(3000, () => {
-    console.log("Server is Running with Success!!");
+const PORT = process.env.PORT || 3333;
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
