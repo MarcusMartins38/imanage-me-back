@@ -10,9 +10,9 @@ const saltRounds = 10;
 router.get("/", async (req: Request, res: Response) => {
     try {
         const users = await prisma.user.findMany();
-        res.status(200).json({ users });
+        return res.status(200).json({ users });
     } catch (err) {
-        res.status(500).json({ error: "Error can't get users." });
+        return res.status(500).json({ error: "Error can't get users." });
     }
 });
 
@@ -69,7 +69,7 @@ router.post("/sign-in", async (req: Request, res: Response) => {
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            return res.status(404).json({ error: "Usuário não encontrado." });
+            return res.status(404).json({ error: "Can't find user." });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
