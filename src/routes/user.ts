@@ -2,17 +2,20 @@ import { PrismaClient } from "@prisma/client";
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { isAuthAdmin } from "../middleware/auth";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", isAuthAdmin, async (req: Request, res: Response) => {
     try {
         const users = await prisma.user.findMany();
-        return res.status(200).json({ users });
+        res.status(200).json({ users });
+        return;
     } catch (err) {
-        return res.status(500).json({ error: "Error can't get users." });
+        res.status(500).json({ error: "Error can't get users." });
+        return;
     }
 });
 
@@ -21,9 +24,10 @@ router.post("/sign-up", async (req: Request, res: Response) => {
         const { email, password, name } = req.body;
 
         if (!email || !password || !name) {
-            return res
-                .status(400)
-                .json({ error: "Todos os campos são obrigatórios." });
+            res.status(400).json({
+                error: "Todos os campos são obrigatórios.",
+            });
+            return;
         }
 
         const existingUser = await prisma.user.findUnique({
@@ -31,7 +35,8 @@ router.post("/sign-up", async (req: Request, res: Response) => {
         });
 
         if (existingUser) {
-            return res.status(400).json({ error: "Email já está em uso." });
+            res.status(400).json({ error: "Email já está em uso." });
+            return;
         }
 
         const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -44,7 +49,7 @@ router.post("/sign-up", async (req: Request, res: Response) => {
             },
         });
 
-        return res.status(201).json({
+        res.status(201).json({
             message: "Usuário criado com sucesso.",
             user: {
                 id: newUser.id,
@@ -52,9 +57,10 @@ router.post("/sign-up", async (req: Request, res: Response) => {
                 name: newUser.name,
             },
         });
+        return;
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Erro interno do servidor." });
+        res.status(500).json({ error: "Erro interno do servidor." });
+        return;
     }
 });
 
@@ -62,19 +68,20 @@ router.post("/sign-in", async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res
-                .status(400)
-                .json({ error: "Email e senha são obrigatórios." });
+            res.status(400).json({ error: "Email e senha são obrigatórios." });
+            return;
         }
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            return res.status(404).json({ error: "Can't find user." });
+            res.status(404).json({ error: "Can't find user." });
+            return;
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.status(401).json({ error: "Credenciais inválidas." });
+            res.status(401).json({ error: "Credenciais inválidas." });
+            return;
         }
 
         const token = jwt.sign(
@@ -83,13 +90,14 @@ router.post("/sign-in", async (req: Request, res: Response) => {
             { expiresIn: process.env.JWT_EXPIRATION || "1h" },
         );
 
-        return res.status(200).json({
+        res.status(200).json({
             message: "Successfully Signed In.",
             token,
         });
+        return;
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Server Error." });
+        res.status(500).json({ error: "Server Error." });
+        return;
     }
 });
 
