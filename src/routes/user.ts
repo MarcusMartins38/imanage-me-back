@@ -7,6 +7,15 @@ const router = express.Router();
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
+router.get("/", async (req: Request, res: Response) => {
+    try {
+        const users = await prisma.user.findMany();
+        res.status(200).json({ users });
+    } catch (err) {
+        res.status(500).json({ error: "Error can't get users." });
+    }
+});
+
 router.post("/sign-up", async (req: Request, res: Response) => {
     try {
         const { email, password, name } = req.body;
@@ -75,12 +84,12 @@ router.post("/sign-in", async (req: Request, res: Response) => {
         );
 
         return res.status(200).json({
-            message: "Login bem-sucedido.",
+            message: "Successfully Signed In.",
             token,
         });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: "Erro interno do servidor." });
+        return res.status(500).json({ error: "Server Error." });
     }
 });
 
