@@ -84,15 +84,20 @@ router.post("/sign-in", async (req: Request, res: Response) => {
             return;
         }
 
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET as string,
-            { expiresIn: process.env.JWT_EXPIRATION || "1h" },
+        delete user.password;
+        const session = jwt.sign(
+            { ...user },
+            process.env.SESSION_JWT_SECRET as string,
+            {
+                expiresIn: process.env.SESSION_JWT_EXPIRATION || "4h",
+                audience: "imanage-me-app",
+                issuer: "imanage-me-app",
+            },
         );
 
         res.status(200).json({
             message: "Successfully Signed In.",
-            token,
+            data: { user, accessToken: session },
         });
         return;
     } catch (error) {
