@@ -13,7 +13,10 @@ export const isAuthAdmin = (
             return;
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+        const decoded = jwt.verify(
+            token,
+            process.env.SESSION_JWT_SECRET as string,
+        );
         const { role } = decoded as { role: string };
 
         if (role !== "admin") {
@@ -25,5 +28,29 @@ export const isAuthAdmin = (
     } catch (err) {
         res.status(401).json({ error: "Token expired." });
         return;
+    }
+};
+
+export const isAuthUser = (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): void => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            res.status(401).json({ error: "There is no oAuth Token." });
+            return;
+        }
+
+        const decoded = jwt.verify(
+            token,
+            process.env.SESSION_JWT_SECRET!,
+        ) as string;
+
+        req.userId = decoded.id;
+        next();
+    } catch (err) {
+        res.status(401).json({ error: "Token expired or invalid." });
     }
 };

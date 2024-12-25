@@ -8,7 +8,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 const saltRounds = 10;
 
-router.get("/", isAuthAdmin, async (req: Request, res: Response) => {
+router.get("/all", isAuthAdmin, async (req: Request, res: Response) => {
     try {
         const users = await prisma.user.findMany();
         res.status(200).json({ users });
