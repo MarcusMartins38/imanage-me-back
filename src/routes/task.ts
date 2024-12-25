@@ -46,6 +46,41 @@ router.post("/", isAuthUser, async (req: Request, res: Response) => {
     }
 });
 
+router.patch("/:id", isAuthUser, async (req: Request, res: Response) => {
+    const userId = req.userId;
+    const { id: taskId } = req.params;
+    const { title, description } = req.body;
+
+    try {
+        const task = await prisma.task.findFirstOrThrow({
+            where: { id: taskId },
+        });
+
+        if (task.userId !== userId) {
+            res.status(401).json({
+                error: "You are not the owner of this task",
+            });
+        }
+
+        const updatedTask = await prisma.task.update({
+            where: { id: taskId },
+            data: {
+                title,
+                description,
+            },
+        });
+
+        res.status(200).json({
+            message: "Task updated successfully",
+            data: updatedTask,
+        });
+        return;
+    } catch (err) {
+        res.status(500).json({ error: err });
+        return;
+    }
+});
+
 router.delete("/:id", isAuthUser, async (req: Request, res: Response) => {
     const userId = req.userId;
     const { id: taskId } = req.params;
