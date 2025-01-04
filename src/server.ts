@@ -1,8 +1,8 @@
-import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
-import userRouter from "./routes/user";
+import dotenv from "dotenv";
+import express from "express";
 import taskRouter from "./routes/task";
+import userRouter from "./routes/user";
 
 dotenv.config();
 

@@ -1,12 +1,25 @@
+import { Storage } from "@google-cloud/storage";
 import { PrismaClient } from "@prisma/client";
-import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { isAuthAdmin } from "../middleware/auth";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import { isAuthAdmin, isAuthUser } from "../middleware/auth";
+import upload from "../middleware/upload";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 const saltRounds = 10;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const storage = new Storage({
+    keyFilename: path.join(__dirname, process.env.GCLOUD_CREDENTIALS_PATH), // Caminho do arquivo de credenciais
+    projectId: process.env.GCLOUD_PROJECT_ID,
+});
+
+const bucket = storage.bucket(process.env.GCLOUD_BUCKET_NAME);
 
 router.get("/all", isAuthAdmin, async (req: Request, res: Response) => {
     try {
@@ -101,9 +114,65 @@ router.post("/sign-in", async (req: Request, res: Response) => {
         });
         return;
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: "Server Error." });
         return;
     }
 });
+
+const uploadImageToGCS = (file: Express.Multer.File) => {
+    return new Promise((resolve, reject) => {
+        const blob = bucket.file(Date.now() + "-" + file.originalname);
+        const blobStream = blob.createWriteStream({
+            resumable: false,
+        });
+
+        blobStream.on("error", (err) => reject(err));
+
+        blobStream.on("finish", () => {
+            const imageUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+            resolve(imageUrl);
+        });
+
+        blobStream.end(file.buffer);
+    });
+};
+
+router.put(
+    "/profile",
+    [isAuthUser, upload.single("profileImageFile")],
+    async (req: Request, res: Response) => {
+        try {
+            const { name, email } = req.body;
+            const userId = req.userId;
+
+            let imageUrl = "";
+
+            if (req.file) {
+                imageUrl = await uploadImageToGCS(req.file);
+            }
+
+            // Atualizando usuário no banco de dados
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    name,
+                    email,
+                    imageUrl: imageUrl || null, // Se não houver imagem, mantemos o valor como null
+                },
+            });
+
+            return res.status(200).json({
+                message: "Perfil atualizado com sucesso",
+                user: updatedUser,
+            });
+        } catch (error) {
+            console.error(error);
+            return res
+                .status(500)
+                .json({ message: "Erro ao atualizar perfil", error });
+        }
+    },
+);
 
 export default router;
