@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15  # Use a versão desejada
+    container_name: postgres_container
+    ports:
+      - "5432:5432"  # Mapeia a porta do contêiner para o host
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}       # Nome de usuário padrão
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}   # Senha do banco
+      POSTGRES_DB: ${POSTGRES_DB}      # Nome do banco de dados inicial
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistência de dados
+
+volumes:
+  postgres_data:
