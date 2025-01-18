@@ -5,20 +5,32 @@ export const createTaskController = async (req: Request, res: Response) => {
     const createTaskData = req.body;
     const userId = req.userId;
 
+    const formattedData = {
+        ...createTaskData,
+        priority: Number(createTaskData.priority),
+    };
+
     try {
-        const newTask = await createTask({ ...createTaskData, userId });
+        const newTask = await createTask({ ...formattedData, userId });
         res.status(201).json({
             message: "Task created successfully",
             data: newTask,
         });
     } catch (error) {
-        res.status(500).json({ error: "Error creating task" });
+        res.status(500).json({ error });
     }
 };
 
 export const updateTaskController = async (req: Request, res: Response) => {
     const { id: taskId } = req.params;
-    const updateTaskData = req.body;
+    let updateTaskData = req.body;
+
+    if (updateTaskData.priority) {
+        updateTaskData = {
+            ...updateTaskData,
+            priority: Number(updateTaskData.priority),
+        };
+    }
 
     try {
         const updatedTask = await updateTask(taskId, updateTaskData);
