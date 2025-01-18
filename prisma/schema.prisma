@@ -29,6 +29,8 @@ model Task {
     id          String   @id @default(uuid())
     title       String
     description String?
+    priority    String?
+    category    String?
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
     userId      String

@@ -1,4 +1,5 @@
 import prisma from "../../prisma/client";
+import { TaskT } from "../utils/types";
 
 export const findTasksByUser = async (userId: string) => {
     return prisma.task.findMany({
@@ -12,11 +13,7 @@ export const findTaskById = async (taskId: string) => {
     });
 };
 
-export const createTask = async (data: {
-    title: string;
-    description: string;
-    userId: string;
-}) => {
+export const createTask = async (data: Omit<TaskT, "id">) => {
     return prisma.task.create({
         data,
     });
@@ -24,7 +21,7 @@ export const createTask = async (data: {
 
 export const updateTask = async (
     taskId: string,
-    data: { title: string; description: string },
+    data: Omit<TaskT, "id" | "userId">,
 ) => {
     return prisma.task.update({
         where: { id: taskId },

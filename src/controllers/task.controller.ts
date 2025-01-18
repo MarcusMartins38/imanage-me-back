@@ -18,10 +18,10 @@ export const createTaskController = async (req: Request, res: Response) => {
 
 export const updateTaskController = async (req: Request, res: Response) => {
     const { id: taskId } = req.params;
-    const { title, description } = req.body;
+    const updateTaskData = req.body;
 
     try {
-        const updatedTask = await updateTask(taskId, { title, description });
+        const updatedTask = await updateTask(taskId, updateTaskData);
         res.status(200).json({
             message: "Task updated successfully",
             data: updatedTask,
