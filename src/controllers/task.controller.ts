@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import { createTask, updateTask, deleteTask } from "../services/task.service";
 
 export const createTaskController = async (req: Request, res: Response) => {
-    const { title, description } = req.body;
+    const createTaskData = req.body;
     const userId = req.userId;
 
     try {
-        const newTask = await createTask({ title, description, userId });
+        const newTask = await createTask({ ...createTaskData, userId });
         res.status(201).json({
             message: "Task created successfully",
             data: newTask,
