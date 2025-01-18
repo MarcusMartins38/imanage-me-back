@@ -38,6 +38,7 @@ export const deleteTaskController = async (req: Request, res: Response) => {
         await deleteTask(taskId);
         res.status(200).json({ message: "Task deleted successfully" });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: "Error deleting task" });
     }
 };

@@ -3,6 +3,7 @@ import prisma from "../../prisma/client";
 import { uploadImageToGCS } from "../services/user.service";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 
 type CreateUserRequest = Request & {
     body: {
@@ -13,6 +14,50 @@ type CreateUserRequest = Request & {
 };
 
 const saltRounds = 10;
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
+const JWT_SECRET = process.env.SESSION_JWT_SECRET as string;
+const oauthClient = new OAuth2Client(CLIENT_ID);
+
+export const googleLogin = async (req: Request, res: Response) => {
+    try {
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ error: "Token is required" });
+        }
+
+        const ticket = await oauthClient.verifyIdToken({
+            idToken,
+            audience: CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+
+        if (!payload) {
+            return res.status(401).json({ error: "Invalid Google Token" });
+        }
+
+        const { email, name, picture } = payload;
+
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: { email, name, imageUrl: picture },
+            });
+        }
+
+        const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+            expiresIn: "4h",
+        });
+
+        res.json({
+            message: "Login successful",
+            data: { user, accessToken: token },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
 
 export const signIn = async (req: Request, res: Response) => {
     try {
@@ -35,15 +80,11 @@ export const signIn = async (req: Request, res: Response) => {
         }
 
         delete user.password;
-        const session = jwt.sign(
-            { ...user },
-            process.env.SESSION_JWT_SECRET as string,
-            {
-                expiresIn: process.env.SESSION_JWT_EXPIRATION || "4h",
-                audience: "imanage-me-app",
-                issuer: "imanage-me-app",
-            },
-        );
+        const session = jwt.sign({ ...user }, JWT_SECRET, {
+            expiresIn: process.env.SESSION_JWT_EXPIRATION || "4h",
+            audience: "imanage-me-app",
+            issuer: "imanage-me-app",
+        });
 
         res.status(200).json({
             message: "Successfully Signed In.",
