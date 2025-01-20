@@ -7,7 +7,7 @@ export const createTaskController = async (req: Request, res: Response) => {
 
     const formattedData = {
         ...createTaskData,
-        priority: Number(createTaskData.priority),
+        priority: Number(createTaskData.priority || 1),
     };
 
     try {
@@ -19,6 +19,24 @@ export const createTaskController = async (req: Request, res: Response) => {
     } catch (error) {
         res.status(500).json({ error });
     }
+};
+
+export const createSubTaskController = async (req: Request, res: Response) => {
+    const { parentTaskId } = req.params;
+    const taskData = req.body;
+    const userId = req.userId;
+
+    const formattedData = {
+        ...taskData,
+        priority: Number(taskData.priority || 1),
+    };
+
+    const newSubTask = createTask({ ...formattedData, userId, parentTaskId });
+
+    res.status(201).json({
+        message: "SubTask created successfully",
+        data: newSubTask,
+    });
 };
 
 export const updateTaskController = async (req: Request, res: Response) => {

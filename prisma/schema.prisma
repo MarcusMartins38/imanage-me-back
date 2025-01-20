@@ -26,13 +26,16 @@ model User {
 }
 
 model Task {
-    id          String   @id @default(uuid())
-    title       String
-    description String?
-    priority    Int?
-    category    String?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    userId      String
-    user        User     @relation(fields: [userId], references: [id])
+    id           String   @id @default(uuid())
+    title        String
+    description  String?
+    priority     Int?
+    category     String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    userId       String
+    user         User     @relation(fields: [userId], references: [id])
+    parentTaskId String?
+    parentTask   Task?    @relation("SubTasks", fields: [parentTaskId], references: [id])
+    subTasks     Task[]   @relation("SubTasks")
 }

@@ -1,6 +1,7 @@
 import express from "express";
 import { isAuthAdmin, isAuthUser } from "../middleware/auth";
 import {
+    createSubTaskController,
     createTaskController,
     deleteTaskController,
     updateTaskController,
@@ -22,7 +23,10 @@ router.get("/all", isAuthAdmin, async (_: Request, res: Response) => {
 router.get("/", isAuthUser, async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
-        const tasks = await prisma.task.findMany({ where: { userId } });
+        const tasks = await prisma.task.findMany({
+            where: { userId },
+            include: { subTasks: true },
+        });
 
         res.status(200).json({ data: tasks });
         return;
@@ -37,5 +41,7 @@ router.post("/", isAuthUser, createTaskController);
 router.patch("/:id", isAuthUser, updateTaskController);
 
 router.delete("/:id", isAuthUser, deleteTaskController);
+
+router.post("/:parentTaskId/subtask", isAuthUser, createSubTaskController);
 
 export default router;
