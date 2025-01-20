@@ -25,17 +25,24 @@ model User {
     tasks     Task[]
 }
 
+enum TaskStatus {
+    PENDING
+    IN_PROGRESS
+    COMPLETED
+}
+
 model Task {
-    id           String   @id @default(uuid())
+    id           String     @id @default(uuid())
     title        String
     description  String?
     priority     Int?
     category     String?
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+    createdAt    DateTime   @default(now())
+    updatedAt    DateTime   @updatedAt
+    status       TaskStatus @default(PENDING)
     userId       String
-    user         User     @relation(fields: [userId], references: [id])
+    user         User       @relation(fields: [userId], references: [id])
     parentTaskId String?
-    parentTask   Task?    @relation("SubTasks", fields: [parentTaskId], references: [id])
-    subTasks     Task[]   @relation("SubTasks")
+    parentTask   Task?      @relation("SubTasks", fields: [parentTaskId], references: [id])
+    subTasks     Task[]     @relation("SubTasks")
 }

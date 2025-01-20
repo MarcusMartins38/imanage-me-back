@@ -23,8 +23,10 @@ router.get("/all", isAuthAdmin, async (_: Request, res: Response) => {
 router.get("/", isAuthUser, async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
+        const onlyMainTask = req.query.onlyMainTask;
+
         const tasks = await prisma.task.findMany({
-            where: { userId },
+            where: { userId, parentTaskId: null },
             include: { subTasks: true },
         });
 
@@ -43,5 +45,20 @@ router.patch("/:id", isAuthUser, updateTaskController);
 router.delete("/:id", isAuthUser, deleteTaskController);
 
 router.post("/:parentTaskId/subtask", isAuthUser, createSubTaskController);
+
+router.patch("/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        const updatedTask = await prisma.task.update({
+            where: { id },
+            data: { status },
+        });
+        res.json({ data: updatedTask });
+    } catch (error) {
+        res.status(500).json({ error: "Error updating task status" });
+    }
+});
 
 export default router;
