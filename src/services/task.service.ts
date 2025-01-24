@@ -21,14 +21,14 @@ export const createTask = async (data: Omit<TaskT, "id">) => {
             priority: Number(data.priority || 1),
             category: data.category,
             user: {
-                connect: { id: "f2ef2416-3506-412c-8939-e681cb89ef3e" },
+                connect: { id: data.userId },
             },
             subTasks: {
                 create: data.subTasks?.map((subTask) => ({
                     title: subTask.title,
                     priority: 1,
                     user: {
-                        connect: { id: "f2ef2416-3506-412c-8939-e681cb89ef3e" },
+                        connect: { id: data.userId },
                     },
                 })),
             },
@@ -42,7 +42,24 @@ export const updateTask = async (
 ) => {
     return prisma.task.update({
         where: { id: taskId },
-        data,
+        data: {
+            title: data.title,
+            description: data.description,
+            priority: Number(data.priority || 1),
+            category: data.category,
+            user: {
+                connect: { id: data.userId },
+            },
+            subTasks: {
+                create: data.subTasks?.map((subTask) => ({
+                    title: subTask.title,
+                    priority: 1,
+                    user: {
+                        connect: { id: data.userId },
+                    },
+                })),
+            },
+        },
     });
 };
 
