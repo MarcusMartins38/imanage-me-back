@@ -33,6 +33,9 @@ export const createTask = async (data: Omit<TaskT, "id">) => {
                 })),
             },
         },
+        include: {
+            subTasks: true,
+        },
     });
 };
 
