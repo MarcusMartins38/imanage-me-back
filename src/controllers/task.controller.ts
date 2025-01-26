@@ -42,6 +42,7 @@ export const createSubTaskController = async (req: Request, res: Response) => {
 export const updateTaskController = async (req: Request, res: Response) => {
     const { id: taskId } = req.params;
     let updateTaskData = req.body;
+    const userId = req.userId;
 
     if (updateTaskData.priority) {
         updateTaskData = {
@@ -51,13 +52,17 @@ export const updateTaskController = async (req: Request, res: Response) => {
     }
 
     try {
-        const updatedTask = await updateTask(taskId, updateTaskData);
+        const updatedTask = await updateTask(taskId, {
+            ...updateTaskData,
+            userId,
+        });
+
         res.status(200).json({
             message: "Task updated successfully",
             data: updatedTask,
         });
     } catch (error) {
-        res.status(500).json({ error: "Error updating task" });
+        res.status(500).json({ error });
     }
 };
 
@@ -68,7 +73,6 @@ export const deleteTaskController = async (req: Request, res: Response) => {
         await deleteTask(taskId);
         res.status(200).json({ message: "Task deleted successfully" });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: "Error deleting task" });
+        res.status(500).json({ error });
     }
 };
