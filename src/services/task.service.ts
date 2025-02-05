@@ -18,7 +18,7 @@ export const createTask = async (data: Omit<TaskT, "id">) => {
         data: {
             title: data.title,
             description: data.description,
-            priority: Number(data.priority || 1),
+            priority: Number(data.priority),
             category: data.category,
             user: {
                 connect: { id: data.userId },

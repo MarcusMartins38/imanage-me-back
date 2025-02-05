@@ -43,6 +43,6 @@ model Task {
     userId       String
     user         User       @relation(fields: [userId], references: [id])
     parentTaskId String?
-    parentTask   Task?      @relation("SubTasks", fields: [parentTaskId], references: [id])
+    parentTask   Task?      @relation("SubTasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
     subTasks     Task[]     @relation("SubTasks")
 }
