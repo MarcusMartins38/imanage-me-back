@@ -14,15 +14,16 @@ datasource db {
 }
 
 model User {
-    id        String   @id @default(uuid())
-    email     String   @unique
-    password  String
-    name      String
-    role      String   @default("user")
-    imageUrl  String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    tasks     Task[]
+    id           String   @id @default(uuid())
+    email        String   @unique
+    password     String
+    name         String
+    role         String   @default("user")
+    imageUrl     String?
+    refreshToken String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    tasks        Task[]
 }
 
 enum TaskStatus {
