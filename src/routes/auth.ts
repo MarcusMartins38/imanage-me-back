@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import prisma from "../../prisma/client";
+import bcrypt from "bcrypt";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET as string;
@@ -9,6 +10,42 @@ const JWT_SECRET = process.env.SESSION_JWT_SECRET as string;
 
 const router = express.Router();
 const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+
+router.post("/sign-in", async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    try {
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ error: "Need to pass email and password!" });
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ error: "User not exist." });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user!.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: "Not valid password!" });
+        }
+
+        delete user.password;
+        const accessToken = jwt.sign({ userId: user.id, email }, JWT_SECRET, {
+            expiresIn: "1h",
+        });
+
+        return res
+            .status(200)
+            .json({
+                message: "Successfully Signed In!",
+                data: { user, accessToken },
+            });
+    } catch (err) {
+        return res.status(400).json({ error: err });
+    }
+});
 
 router.post("/google", async (req: Request, res: Response) => {
     const { idToken } = req.body;
@@ -56,7 +93,10 @@ router.post("/google", async (req: Request, res: Response) => {
                 secure: false,
                 path: "/auth/refresh",
             })
-            .json({ message: "Authentication successful", user });
+            .json({
+                message: "Authentication successful",
+                data: { user, accessToken },
+            });
     } catch (err) {
         console.error("Error during Google Authentication:", err);
         res.status(400).json({ error: "Authentication failed", details: err });
