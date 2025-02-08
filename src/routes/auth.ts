@@ -103,7 +103,7 @@ router.post("/google", async (req: Request, res: Response) => {
 });
 
 router.post("/refresh", async (req: Request, res: Response) => {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken)
         return res.status(401).json({ error: "Not authenticated" });
 
@@ -130,7 +130,10 @@ router.post("/refresh", async (req: Request, res: Response) => {
             secure: false,
         });
 
-        return res.json({ message: "Token refreshed" });
+        return res.json({
+            message: "Token refreshed",
+            data: { accessToken: newAccessToken },
+        });
     } catch {
         res.status(403).json({ error: "Invalid refresh token" });
     }
