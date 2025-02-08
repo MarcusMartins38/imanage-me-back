@@ -48,7 +48,7 @@ export const isAuthUser = (
             process.env.SESSION_JWT_SECRET!,
         ) as string;
 
-        req.userId = decoded.id;
+        req.userId = decoded.userId;
         next();
     } catch (err) {
         res.status(401).json({ error: "Token expired or invalid." });
