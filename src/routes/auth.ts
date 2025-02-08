@@ -10,6 +10,7 @@ const JWT_SECRET = process.env.SESSION_JWT_SECRET as string;
 
 const router = express.Router();
 const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+const saltRounds = 10;
 
 router.post("/sign-in", async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -36,12 +37,10 @@ router.post("/sign-in", async (req: Request, res: Response) => {
             expiresIn: "1h",
         });
 
-        return res
-            .status(200)
-            .json({
-                message: "Successfully Signed In!",
-                data: { user, accessToken },
-            });
+        return res.status(200).json({
+            message: "Successfully Signed In!",
+            data: { user, accessToken },
+        });
     } catch (err) {
         return res.status(400).json({ error: err });
     }
@@ -134,6 +133,45 @@ router.post("/refresh", async (req: Request, res: Response) => {
         return res.json({ message: "Token refreshed" });
     } catch {
         res.status(403).json({ error: "Invalid refresh token" });
+    }
+});
+
+router.post("/sign-up", async (req: Request, res: Response) => {
+    const { email, name, password } = req.body;
+
+    try {
+        if (!email || !password || !name) {
+            return res
+                .status(400)
+                .json({ error: "You need to fill all fields!" });
+        }
+
+        const user = prisma.user.findUnique({
+            where: { email },
+        });
+        if (user) {
+            res.status(400).json({ error: "Email already in use!" });
+        }
+
+        const hashedPassword = bcrypt.hash(password, saltRounds);
+        const newUser = await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                name,
+                role: "user",
+            },
+        });
+
+        delete newUser.password;
+        return res.status(201).json({
+            message: "User Created!",
+            user: {
+                user: newUser,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ error });
     }
 });
 
