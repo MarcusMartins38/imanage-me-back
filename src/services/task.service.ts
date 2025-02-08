@@ -39,69 +39,76 @@ export const createTask = async (data: Omit<TaskT, "id">) => {
     });
 };
 
-export const updateTask = async (
-    taskId: string,
-    data: Omit<TaskT, "id" | "userId">,
-) => {
-    return await prisma.$transaction(async (prisma) => {
-        const updatedTask = await prisma.task.update({
-            where: { id: taskId },
-            data: {
-                title: data.title,
-                description: data.description,
-                priority: Number(data.priority || 1),
-                category: data.category,
-                user: { connect: { id: data.userId } },
-            },
-            include: {
-                subTasks: {
-                    select: {
-                        id: true,
-                        title: true,
-                        status: true,
+export const updateTask = async (taskId: string, data: Omit<TaskT, "id">) => {
+    try {
+        return await prisma.$transaction(async (tx) => {
+            const updatedTask = await tx.task.update({
+                where: { id: taskId },
+                data: {
+                    title: data.title,
+                    description: data.description,
+                    priority: Number(data.priority) || 1,
+                    category: data.category,
+                    user: data.userId
+                        ? { connect: { id: data.userId } }
+                        : undefined,
+                },
+                include: {
+                    subTasks: {
+                        select: {
+                            id: true,
+                            title: true,
+                            status: true,
+                        },
                     },
                 },
-            },
-        });
+            });
 
-        const newSubTasks = data.subTasks
-            ?.filter((subTask) => !subTask.id)
-            .map((subTask) => ({
-                title: subTask.title,
-                priority: subTask.priority || 1,
-                userId: data.userId,
-                parentTaskId: taskId,
-            }));
+            const newSubTasks =
+                data.subTasks?.filter((subTask) => !subTask.id) || [];
+            let createdSubTasks = [];
 
-        let createdSubTasks = [];
-        if (newSubTasks?.length) {
-            createdSubTasks = await Promise.all(
-                newSubTasks.map(async (subTaskData) => {
-                    return await prisma.task.create({
-                        data: subTaskData,
-                    });
-                }),
-            );
-        }
+            if (newSubTasks.length > 0) {
+                createdSubTasks = await Promise.all(
+                    newSubTasks.map((subTaskData) =>
+                        tx.task.create({
+                            data: {
+                                title: subTaskData.title,
+                                priority: Number(subTaskData.priority) || 1,
+                                userId: data.userId,
+                                parentTaskId: taskId,
+                            },
+                            select: {
+                                id: true,
+                                title: true,
+                                status: true,
+                            },
+                        }),
+                    ),
+                );
+            }
 
-        const updateSubTasks = data.subTasks?.filter((subTask) => subTask.id);
-        if (updateSubTasks?.length) {
+            const updateSubTasks =
+                data.subTasks?.filter((subTask) => subTask.id) || [];
             for (const subTask of updateSubTasks) {
-                await prisma.task.update({
+                await tx.task.update({
                     where: { id: subTask.id },
                     data: {
                         title: subTask.title,
-                        priority: subTask.priority || 1,
+                        priority: Number(subTask.priority) || 1,
                     },
                 });
             }
-        }
 
-        return {
-            ...updatedTask,
-            subTasks: [...updatedTask.subTasks, ...createdSubTasks],
-        };
-    });
+            return {
+                ...updatedTask,
+                subTasks: [...(updatedTask.subTasks || []), ...createdSubTasks],
+            };
+        });
+    } catch (error) {
+        console.error(error);
+        throw new Error("Erro ao atualizar a tarefa. Verifique os logs.");
+    }
 };
 
 export const deleteTask = async (taskId: string) => {
