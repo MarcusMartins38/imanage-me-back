@@ -1,11 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import express, { Request, Response } from "express";
-import {
-    signIn,
-    signUp,
-    updateUser,
-    googleLogin,
-} from "../controllers/user.controller";
+import { updateUser } from "../controllers/user.controller";
 import { isAuthAdmin, isAuthUser } from "../middleware/auth";
 import upload from "../middleware/upload";
 
@@ -22,12 +17,6 @@ router.get("/all", isAuthAdmin, async (req: Request, res: Response) => {
         return;
     }
 });
-
-router.post("/sign-up", signUp);
-
-router.post("/sign-in", signIn);
-
-router.post("/google-login", googleLogin);
 
 router.put(
     "/profile",
