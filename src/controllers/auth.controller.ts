@@ -12,6 +12,43 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET as string;
 const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
 const saltRounds = 10;
 
+interface GooglePayload {
+    email: string;
+    name: string;
+    picture: string;
+}
+
+const generateTokens = (userId: string, email: string) => {
+    const accessToken = jwt.sign({ userId, email }, JWT_SECRET, {
+        expiresIn: "1h",
+    });
+
+    const refreshToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
+
+    return { accessToken, refreshToken };
+};
+
+const setCookies = (
+    res: Response,
+    accessToken: string,
+    refreshToken: string,
+) => {
+    res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 3600000,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/auth/refresh",
+        maxAge: 604800000,
+    });
+};
+
 export const authSignInController = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
@@ -53,55 +90,47 @@ export const authGoogleSignInController = async (
 ) => {
     const { idToken } = req.body;
 
-    if (!idToken) res.status(400).json({ error: "Need to send idToken" });
+    if (!idToken) {
+        return res.status(400).json({ error: "Need to send idToken" });
+    }
 
     try {
         const ticket = await oAuth2Client.verifyIdToken({
             idToken,
             audience: GOOGLE_CLIENT_ID,
         });
-        const payload = ticket.getPayload();
 
+        const payload = ticket.getPayload() as GooglePayload;
         const { email, name, picture } = payload;
 
         let user = await prisma.user.findUnique({ where: { email } });
-        if (!user)
+        if (!user) {
             user = await prisma.user.create({
                 data: { email, name, imageUrl: picture },
             });
+        }
 
-        const accessToken = jwt.sign(
-            { userId: user.id, email: user.email },
-            JWT_SECRET,
-            { expiresIn: "1h" },
+        const { accessToken, refreshToken } = generateTokens(
+            user.id,
+            user.email,
         );
-
-        const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, {
-            expiresIn: "7d",
-        });
 
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken },
         });
 
-        res.status(200)
-            .cookie("accessToken", accessToken, {
-                httpOnly: true,
-                secure: false,
-            })
-            .cookie("refreshToken", refreshToken, {
-                httpOnly: true,
-                secure: false,
-                path: "/auth/refresh",
-            })
-            .json({
-                message: "Authentication successful",
-                data: { user, accessToken },
-            });
-    } catch (err) {
-        console.error("Error during Google Authentication:", err);
-        res.status(400).json({ error: "Authentication failed", details: err });
+        setCookies(res, accessToken, refreshToken);
+
+        return res.status(200).json({
+            message: "Authentication successful",
+            data: { user, accessToken },
+        });
+    } catch (error) {
+        console.error("Error during Google Authentication:", error);
+        return res
+            .status(400)
+            .json({ error: "Authentication failed", details: error });
     }
 };
 
@@ -110,7 +139,10 @@ export const authRefreshTokenController = async (
     res: Response,
 ) => {
     const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) res.status(401).json({ error: "Not authenticated" });
+
+    if (!refreshToken) {
+        return res.status(401).json({ error: "No refresh token provided" });
+    }
 
     try {
         const decoded = jwt.verify(refreshToken, JWT_SECRET) as {
@@ -121,27 +153,30 @@ export const authRefreshTokenController = async (
         });
 
         if (!user || user.refreshToken !== refreshToken) {
-            res.json(403).json({ error: "Invalid refresh token" });
-            return;
+            return res.status(403).json({ error: "Invalid refresh token" });
         }
 
-        const newAccessToken = jwt.sign(
+        const accessToken = jwt.sign(
             { userId: user.id, email: user.email },
             JWT_SECRET,
-            { expiresIn: "1h" },
+            { expiresIn: "15m" },
         );
 
-        res.cookie("accessToken", newAccessToken, {
+        res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: false,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 900000, // 15 minutes
         });
 
-        res.json({
-            message: "Token refreshed",
-            data: { accessToken: newAccessToken },
+        return res.json({
+            message: "Token refreshed successfully",
+            data: { accessToken },
         });
-    } catch {
-        res.status(403).json({ error: "Invalid refresh token" });
+    } catch (error) {
+        return res
+            .status(403)
+            .json({ error: "Invalid refresh token", details: error });
     }
 };
 
