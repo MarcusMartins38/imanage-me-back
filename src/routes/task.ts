@@ -1,5 +1,9 @@
-import express from "express";
-import { isAuthAdmin, isAuthUser } from "../middleware/auth";
+import express, { Request, Response } from "express";
+import {
+    AuthRequest,
+    isAuthAdmin,
+    isAuthUser,
+} from "../middleware/auth.middleware";
 import {
     createSubTaskController,
     createTaskController,
@@ -20,10 +24,9 @@ router.get("/all", isAuthAdmin, async (_: Request, res: Response) => {
     }
 });
 
-router.get("/", isAuthUser, async (req: Request, res: Response) => {
+router.get("/", isAuthUser, async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.userId;
-        const onlyMainTask = req.query.onlyMainTask;
 
         const tasks = await prisma.task.findMany({
             where: { userId, parentTaskId: null },

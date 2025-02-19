@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { createTask, updateTask, deleteTask } from "../services/task.service";
+import { AuthRequest } from "../middleware/auth.middleware";
 
-export const createTaskController = async (req: Request, res: Response) => {
+export const createTaskController = async (req: AuthRequest, res: Response) => {
     const createTaskData = req.body;
     const userId = req.userId;
 
@@ -21,7 +22,10 @@ export const createTaskController = async (req: Request, res: Response) => {
     }
 };
 
-export const createSubTaskController = async (req: Request, res: Response) => {
+export const createSubTaskController = async (
+    req: AuthRequest,
+    res: Response,
+) => {
     const { parentTaskId } = req.params;
     const taskData = req.body;
     const userId = req.userId;
@@ -39,7 +43,7 @@ export const createSubTaskController = async (req: Request, res: Response) => {
     });
 };
 
-export const updateTaskController = async (req: Request, res: Response) => {
+export const updateTaskController = async (req: AuthRequest, res: Response) => {
     const { id: taskId } = req.params;
     let updateTaskData = req.body;
     const userId = req.userId;

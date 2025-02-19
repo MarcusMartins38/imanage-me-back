@@ -66,7 +66,7 @@ export const updateTask = async (taskId: string, data: Omit<TaskT, "id">) => {
 
             const newSubTasks =
                 data.subTasks?.filter((subTask) => !subTask.id) || [];
-            let createdSubTasks = [];
+            let createdSubTasks = [] as Omit<TaskT, "userId">[];
 
             if (newSubTasks.length > 0) {
                 createdSubTasks = await Promise.all(

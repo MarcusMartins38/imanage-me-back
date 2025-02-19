@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import express, { Request, Response } from "express";
 import { updateUser } from "../controllers/user.controller";
-import { isAuthAdmin, isAuthUser } from "../middleware/auth";
-import upload from "../middleware/upload";
+import { isAuthAdmin, isAuthUser } from "../middleware/auth.middleware";
+import upload from "../middleware/upload.middleware";
 
 const router = express.Router();
 const prisma = new PrismaClient();

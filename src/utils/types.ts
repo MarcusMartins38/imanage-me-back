@@ -5,4 +5,5 @@ export type TaskT = {
     priority?: string;
     category?: string;
     userId: string;
+    subTasks?: TaskT[];
 };

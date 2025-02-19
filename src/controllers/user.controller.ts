@@ -1,16 +1,9 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import prisma from "../../prisma/client";
 import { uploadImageToGCS } from "../services/user.service";
+import { AuthRequest } from "../middleware/auth.middleware";
 
-type CreateUserRequest = Request & {
-    body: {
-        name?: string;
-        email?: string;
-    };
-    file?: Express.Multer.File;
-};
-
-export const updateUser = async (req: CreateUserRequest, res: Response) => {
+export const updateUser = async (req: AuthRequest, res: Response) => {
     try {
         const { name, email } = req.body;
         const userId = req.userId;
@@ -18,27 +11,27 @@ export const updateUser = async (req: CreateUserRequest, res: Response) => {
         let imageUrl = "";
 
         if (req.file) {
-            imageUrl = await uploadImageToGCS(req.file);
+            imageUrl = (await uploadImageToGCS(req.file)) as string;
         }
 
-        // Atualizando usuário no banco de dados
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
                 name,
                 email,
-                imageUrl: imageUrl || null, // Se não houver imagem, mantemos o valor como null
+                imageUrl: imageUrl || null,
             },
         });
 
-        return res.status(200).json({
-            message: "Perfil atualizado com sucesso",
+        res.status(200).json({
+            message: "Profile Updated Successfully",
             user: updatedUser,
         });
     } catch (error) {
         console.error(error);
-        return res
-            .status(500)
-            .json({ message: "Erro ao atualizar perfil", error });
+        res.status(500).json({
+            message: "Erro when tried to update your profile",
+            error,
+        });
     }
 };

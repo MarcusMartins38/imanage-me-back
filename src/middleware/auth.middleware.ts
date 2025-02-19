@@ -1,5 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
+
+export interface AuthRequest extends Request {
+    userId?: string;
+}
 
 export const isAuthAdmin = (
     req: Request,
@@ -32,7 +36,7 @@ export const isAuthAdmin = (
 };
 
 export const isAuthUser = (
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction,
 ): void => {
@@ -46,7 +50,7 @@ export const isAuthUser = (
         const decoded = jwt.verify(
             token,
             process.env.SESSION_JWT_SECRET!,
-        ) as string;
+        ) as JwtPayload;
 
         req.userId = decoded.userId;
         next();

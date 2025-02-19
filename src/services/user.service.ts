@@ -6,11 +6,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const storage = new Storage({
-    keyFilename: path.join(__dirname, process.env.GCLOUD_CREDENTIALS_PATH), // Caminho do arquivo de credenciais
+    keyFilename: path.join(
+        __dirname,
+        process.env.GCLOUD_CREDENTIALS_PATH as string,
+    ),
     projectId: process.env.GCLOUD_PROJECT_ID,
 });
 
-const bucket = storage.bucket(process.env.GCLOUD_BUCKET_NAME);
+const bucket = storage.bucket(process.env.GCLOUD_BUCKET_NAME as string);
 
 export const uploadImageToGCS = (file: Express.Multer.File) => {
     return new Promise((resolve, reject) => {
