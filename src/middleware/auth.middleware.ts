@@ -41,14 +41,16 @@ export const isAuthUser = (
     next: NextFunction,
 ): void => {
     try {
+        const accessToken = req.cookies.accessToken;
         const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
+
+        if (!accessToken) {
             res.status(401).json({ error: "There is no oAuth Token." });
             return;
         }
 
         const decoded = jwt.verify(
-            token,
+            accessToken,
             process.env.SESSION_JWT_SECRET!,
         ) as JwtPayload;
 

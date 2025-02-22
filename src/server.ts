@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import cookieParser from "cookie-parser";
 import taskRouter from "./routes/task";
 import userRouter from "./routes/user";
 import authRouter from "./routes/auth";
@@ -8,8 +9,16 @@ import authRouter from "./routes/auth";
 dotenv.config();
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+    cors({
+        origin: "http://localhost:5173", // or whatever port your Vite app is running on
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+    }),
+);
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);

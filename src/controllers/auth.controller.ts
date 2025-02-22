@@ -18,10 +18,19 @@ interface GooglePayload {
     picture: string;
 }
 
-const generateTokens = (userId: string, email: string) => {
-    const accessToken = jwt.sign({ userId, email }, JWT_SECRET, {
-        expiresIn: "1h",
-    });
+const generateTokens = (
+    userId: string,
+    email: string,
+    name: string,
+    imageUrl?: string,
+) => {
+    const accessToken = jwt.sign(
+        { userId, email, name, imageUrl },
+        JWT_SECRET,
+        {
+            expiresIn: "1h",
+        },
+    );
 
     const refreshToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
 
@@ -36,7 +45,8 @@ const setCookies = (
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax",
+        path: "/",
         maxAge: 3600000,
     });
 
@@ -113,6 +123,8 @@ export const authGoogleSignInController = async (
         const { accessToken, refreshToken } = generateTokens(
             user.id,
             user.email,
+            user.name,
+            user.imageUrl as string,
         );
 
         await prisma.user.update({
