@@ -153,7 +153,9 @@ export const authRefreshTokenController = async (
     const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
-        return res.status(401).json({ error: "No refresh token provided" });
+        return res
+            .status(403)
+            .json({ error: "No refresh token saved or provided" });
     }
 
     try {
