@@ -7,6 +7,7 @@ import {
     authSignOutController,
     authSignUpController,
 } from "../controllers/auth.controller";
+import { isAuthUser } from "../middleware/auth.middleware";
 
 const router = express.Router();
 
@@ -14,10 +15,10 @@ router.post("/sign-in", authSignInController);
 
 router.post("/google", authGoogleSignInController);
 
-router.post("/refresh", authRefreshTokenController);
+router.post("/refresh", isAuthUser, authRefreshTokenController);
 
 router.post("/sign-up", authSignUpController);
 
-router.post("/logout", authSignOutController);
+router.get("/logout", isAuthUser, authSignOutController);
 
 export default router;

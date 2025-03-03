@@ -3,7 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import prisma from "../../prisma/client";
 import bcrypt from "bcrypt";
-import { User } from "@prisma/client";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 const JWT_SECRET = process.env.SESSION_JWT_SECRET as string;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
@@ -32,7 +32,11 @@ const generateTokens = (
         },
     );
 
-    const refreshToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
+    const refreshToken = jwt.sign(
+        { userId, email, name, imageUrl },
+        JWT_SECRET,
+        { expiresIn: "7d" },
+    );
 
     return { accessToken, refreshToken };
 };
@@ -53,8 +57,8 @@ const setCookies = (
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/auth/refresh",
+        sameSite: "lax",
+        path: "/",
         maxAge: 604800000,
     });
 };
@@ -231,21 +235,19 @@ export const authSignUpController = async (req: Request, res: Response) => {
     }
 };
 
-export const authSignOutController = async (req: Request, res: Response) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) res.status(401).json({ error: "Not authenticated" });
-
+export const authSignOutController = async (
+    req: AuthRequest,
+    res: Response,
+) => {
     try {
-        const decoded = jwt.verify(refreshToken, JWT_SECRET) as {
-            userId: string;
-        };
+        const userId = req.userId;
 
         await prisma.user.update({
-            where: { id: decoded.userId },
+            where: { id: userId },
             data: { refreshToken: null },
         });
 
-        res.clearCookie("token");
+        res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
 
         res.json({ message: "Logged out successfully" });
