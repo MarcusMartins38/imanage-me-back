@@ -45,7 +45,7 @@ export const isAuthUser = (
         const token = req.headers.authorization?.split(" ")[1];
 
         if (!accessToken) {
-            res.status(401).json({ error: "There is no oAuth Token." });
+            res.status(403).json({ error: "There is no oAuth Token." });
             return;
         }
 

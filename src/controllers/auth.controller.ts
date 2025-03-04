@@ -151,7 +151,7 @@ export const authGoogleSignInController = async (
 };
 
 export const authRefreshTokenController = async (
-    req: Request,
+    req: AuthRequest,
     res: Response,
 ) => {
     const refreshToken = req.cookies?.refreshToken;
@@ -163,12 +163,12 @@ export const authRefreshTokenController = async (
     }
 
     try {
-        const decoded = jwt.verify(refreshToken, JWT_SECRET) as {
-            userId: string;
-        };
+        const userId = req.userId;
         const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: userId },
         });
+
+        console.log({ userId, user });
 
         if (!user || user.refreshToken !== refreshToken) {
             return res.status(403).json({ error: "Invalid refresh token" });
